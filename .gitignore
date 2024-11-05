@@ -1,0 +1,6 @@
+.DS_Store
+.venv/
+
+# These files are too large to be stored in Git
+series_test.parquet/
+series_train.parquet/
