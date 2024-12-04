@@ -201,17 +201,17 @@ def remove_highly_correlated_columns(train_df, test_df):
 
             # Drop the column with lesser normalized variance
             if var_col1 >= var_col2:
-                print(f"Column {col2} has a correlation of {corr_value} with {col1}")
+                # print(f"Column {col2} has a correlation of {corr_value} with {col1}")
                 columns_to_drop.add(col2)
             else:
-                print(f"Column {col1} has a correlation of {corr_value} with {col2}")
+                # print(f"Column {col1} has a correlation of {corr_value} with {col2}")
                 columns_to_drop.add(col1)
         return columns_to_drop
 
     def drop_columns_from_dataframe(df, cols=[]):
         for col in cols:
             if col in df.columns:
-                print(f"Dropping column {col}")
+                # print(f"Dropping column {col}")
                 df.drop(columns=col, inplace=True)
 
     columns_to_drop = handle_highly_correlated_columns(train_df)
@@ -242,7 +242,7 @@ def cap_outlier_scores_at_100(train_df, test_df):
     def handle_outliers(df, column, valid_min, valid_max, placeholder_value=np.nan):
         outliers = (df[column] < valid_min) | (df[column] > valid_max)
         
-        print(f"Found {outliers.sum()} outliers in column '{column}'.")
+        # print(f"Found {outliers.sum()} outliers in column '{column}'.")
         
         df.loc[outliers, column] = placeholder_value
 
@@ -273,10 +273,10 @@ def drop_rows_that_are_above_null_threshold(train_df, test_df):
     train_df.dropna(thresh=row_threshold, axis=0, inplace=True)
 
     pd.set_option('display.max_rows', 10)
-    print(f"There are {len(train_df.columns)} columns in the training data and {len(test_df.columns)} columns in the test data.\n")
+    # print(f"There are {len(train_df.columns)} columns in the training data and {len(test_df.columns)} columns in the test data.\n")
     null_counts_per_row = train_df.isnull().sum(axis=1)
     null_counts_distribution = null_counts_per_row.value_counts().sort_index()
-    print(f"Here are the number of null columns each record has:\n {null_counts_distribution}")
+    # print(f"Here are the number of null columns each record has:\n {null_counts_distribution}")
 
     return train_df, test_df
 
@@ -346,8 +346,7 @@ def do_train_test_split(train_df, test_df):
 
 
 def train_using_random_forest_classification(X_full_train, X_test, y_full_train, y_test):
-    print(f"\n\nRunning train_using_random_forest_classification()\n\n")
-    print(y_full_train)
+    # print(f"\n\nRunning train_using_random_forest_classification()\n\n")
     kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     qwk_scores = []
 
