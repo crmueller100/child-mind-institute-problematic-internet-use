@@ -4,3 +4,5 @@
 # These files are too large to be stored in Git
 series_test.parquet/
 series_train.parquet/
+
+catboost_info/
