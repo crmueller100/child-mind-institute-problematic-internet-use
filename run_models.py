@@ -26,12 +26,14 @@ from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
 
 
-from lightgbm import LGBMRegressor
+from lightgbm import LGBMRegressor, LGBMClassifier
 from xgboost import XGBRegressor
 from sklearn.ensemble import VotingRegressor, RandomForestRegressor, GradientBoostingRegressor
 from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.pipeline import Pipeline
 from sklearn.base import clone, BaseEstimator, RegressorMixin
+from sklearn.ensemble import VotingClassifier
+
 
 import lightgbm as lgb
 from catboost import CatBoostClassifier, Pool
@@ -39,6 +41,7 @@ from catboost import CatBoostClassifier, Pool
 import os
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
+
 
 def load_dater():
     # print(f"Running loading dater()")
@@ -123,6 +126,7 @@ def remove_low_correlation_columns(train_df, test_df):
 
     train_df_with_correlation = train_df[corr_list].copy()
     common_columns = [col for col in corr_list if col in train_df.columns and col in test_df.columns]
+    common_columns.append('id')
     test_df_with_correlation = test_df[common_columns].copy()
 
     return train_df_with_correlation, test_df_with_correlation
@@ -346,7 +350,7 @@ def do_train_test_split(train_df, test_df):
 
 
 def train_using_random_forest_classification(X_full_train, X_test, y_full_train, y_test):
-    # print(f"\n\nRunning train_using_random_forest_classification()\n\n")
+    print(f"\n\nRunning train_using_random_forest_classification()\n")
     kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     qwk_scores = []
 
@@ -379,6 +383,7 @@ def train_using_random_forest_classification(X_full_train, X_test, y_full_train,
 
 
 def train_using_light_gbm(X_full_train, X_test, y_full_train, y_test):
+    print(f"\n\nRunning train_using_light_gbm()\n")
     train_data = lgb.Dataset(X_full_train, label=y_full_train)
 
     # Set parameters for multi-class classification
@@ -405,21 +410,41 @@ def train_using_light_gbm(X_full_train, X_test, y_full_train, y_test):
     print(f"Quadratic Weighted Kappa: {qwk_score:.4f}")
 
 def train_using_catboost(X_full_train, X_test, y_full_train, y_test):
-    model = CatBoostClassifier(iterations=10,
-                            depth=2,
-                            learning_rate=1,
-                            loss_function='MultiClass',
-                            verbose=True)
+    print(f"\n\nRunning train_using_catboost()\n")
+    model = CatBoostClassifier(iterations=1000,
+                        depth=6,
+                        learning_rate=0.05,
+                        loss_function='MultiClass',
+                        verbose=True,
+                        l2_leaf_reg=4
+                        )
 
-    # Train the model
+    possible_cat_features = ['FGC-FGC_CU_Zone','FGC-FGC_GSND_Zone','FGC-FGC_GSD_Zone','FGC-FGC_PU_Zone','FGC-FGC_SRL_Zone','FGC-FGC_SRR_Zone','FGC-FGC_TL_Zone','BIA-BIA_Activity_Level_num','BIA-BIA_Frame_num','PCIAT-PCIAT_01','PCIAT-PCIAT_02','PCIAT-PCIAT_03','PCIAT-PCIAT_04','PCIAT-PCIAT_05','PCIAT-PCIAT_06','PCIAT-PCIAT_07','PCIAT-PCIAT_08','PCIAT-PCIAT_09','PCIAT-PCIAT_10','PCIAT-PCIAT_11','PCIAT-PCIAT_12','PCIAT-PCIAT_13','PCIAT-PCIAT_14','PCIAT-PCIAT_15','PCIAT-PCIAT_16','PCIAT-PCIAT_17','PCIAT-PCIAT_18','PCIAT-PCIAT_19','PCIAT-PCIAT_20','PreInt_EduHx-computerinternet_hoursday']
+
+    cat_features = [col for col in X_full_train.columns if col in possible_cat_features]
+
+    # lightgbm = LGBMClassifier(n_estimators=500, learning_rate=0.05, max_depth=6)
+    # ensemble = VotingClassifier(estimators=[('catboost', catboost), ('lightgbm', lightgbm)], voting='soft')
+    
     model.fit(X_full_train, y_full_train)
 
+    # Train the model
+    model.fit(X_full_train, y_full_train, cat_features=cat_features)
+
     # Make the prediction using the resulting model
-    preds_class = model.predict(X_test)
+    y_pred = model.predict(X_test)
 
     # Calculate the Quadratic Weighted Kappa score
-    qwk_score = cohen_kappa_score(y_test, preds_class, weights="quadratic")
+    qwk_score = cohen_kappa_score(y_test, y_pred, weights="quadratic")
     print(f"Quadratic Weighted Kappa: {qwk_score:.4f}")
+    print(f"\nQuadratic Weighted Kappa: {calculate_qwk(y_test, y_pred):.4f}\n")
+    print(f"Accuracy: {accuracy_score(y_test, y_pred):.4f}")
+    print(classification_report(y_test, y_pred, zero_division=0))
+
+    # ids = X_full_train['id']
+    # y_pred.to_csv('training_submission.csv', index=False)
+    return model
+
 
 def main():
     '''
@@ -429,17 +454,17 @@ def main():
     ids = test_df['id']
     X_final = test_df.drop(columns=['id'] + [col for col in test_df.columns if 'PCIAT-PCIAT' in col])
     y_pred_final = model.predict(X_final)
-    y_pred_final = y_pred_final.argmax(axis=1)
+    # y_pred_final = y_pred_final.argmax(axis=1)
 
     submission = pd.DataFrame({
         'id': ids,
         'prediction': y_pred_final
     })
 
-    submission.to_csv('submission.csv', index=False)
+    # submission.to_csv('submission.csv', index=False)
 
 if __name__ == "__main__":
-    print('hello')
+    print('running')
     train_df, test_df, train_ds, test_ds = load_dater()
     train_df, test_df, train_ds, test_ds = fill_in_nans_on_time_series_data(train_df, test_df, train_ds, test_ds)
     train_df, test_df = remove_low_correlation_columns(train_df, test_df)
@@ -455,6 +480,34 @@ if __name__ == "__main__":
     train_df.dropna(subset=['sii'], inplace=True)
     X_full_train, X_test, y_full_train, y_test = do_train_test_split(train_df, test_df)
 
-    train_using_random_forest_classification(X_full_train, X_test, y_full_train, y_test)
-    train_using_light_gbm(X_full_train, X_test, y_full_train, y_test)
-    train_using_catboost(X_full_train, X_test, y_full_train, y_test)
+    # train_using_random_forest_classification(X_full_train, X_test, y_full_train, y_test)
+    # train_using_light_gbm(X_full_train, X_test, y_full_train, y_test)
+    model = train_using_catboost(X_full_train, X_test, y_full_train, y_test)
+    
+    # print(test_df.head())
+    ids = test_df['id']
+    X_final = test_df.drop(columns=['id'] + [col for col in test_df.columns if 'PCIAT-PCIAT' in col])
+    print(X_final.columns)
+    print(X_final.head())
+    y_pred_final = model.predict(X_final)
+    y_pred_final = y_pred_final.argmax(axis=1)
+
+    submission = pd.DataFrame({
+        'id': ids,
+        'prediction': y_pred_final
+    })
+    submission.to_csv('submission.csv', index=False)
+
+
+
+'''
+0.3919
+model = CatBoostClassifier(iterations=1000,
+                    depth=6,
+                    learning_rate=0.05,
+                    loss_function='MultiClass',
+                    verbose=True,
+                    l2_leaf_reg=4
+                    )
+
+'''
