@@ -1,10 +1,10 @@
 # CMI - Problematic Internet Use
 
-This repository houses my solution to the [Child Mind Institute - Problematic Internet Use](https://www.kaggle.com/competitions/child-mind-institute-problematic-internet-use) Kaggle competition. Held from September to December 2024, the goal was to predict problematic internet usage in children based on their physical activity and fitness data.
+This repository outlines my solution to the [Child Mind Institute - Problematic Internet Use](https://www.kaggle.com/competitions/child-mind-institute-problematic-internet-use) Kaggle competition. Held from September to December 2024, the goal was to predict problematic internet usage in children based on their physical activity and fitness data.
 
 ### Motivation
 
-This was my first foray into the world of Kaggle competitions! It provided a fantastic opportunity to apply my machine learning knowledge I studied in grad school to a real-world problem.
+This was my first foray into the world of Kaggle competitions! It provided a fantastic opportunity to apply my machine learning knowledge I studied in grad school to a real-world data set.
 
 ### Approach
 
@@ -26,4 +26,4 @@ This was my first foray into the world of Kaggle competitions! It provided a fan
 ### Future Improvements
 
 * Explore more sophisticated feature engineering techniques.
-* Study my fellow competitors' notebooks
+* Study my fellow competitors' notebooks. Many of the top scorers' notebooks are [publicly accessible](https://www.kaggle.com/competitions/child-mind-institute-problematic-internet-use/leaderboard).
